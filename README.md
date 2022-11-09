@@ -22,3 +22,8 @@ If the payload pattern is found in the response, a log is added in the tab named
 ![Payload sent](images/payload_sent.png)
 
 **NB:** Since every request sent is tweaked, kindly enable the extension only when you want to check for bug.
+
+# References
+- https://portswigger.net/burp/extender#SampleExtensions
+- https://gist.github.com/irsdl/0ab8fce5368e449df64ed89c1b7323a6
+- https://cirius.medium.com/writing-your-own-burpsuite-extensions-complete-guide-cb7aba4dbceb
