@@ -1,7 +1,7 @@
 # burp_bug_finder
 
 Burp_bug_finder is a custom burpuite plugin (written in python) that makes easy the discovery of web vulnerabilities. 
-This first version focused only on XSS, **there's no need to manually send xss payload either for reflected or stored payload**; you just need to browse to the pages where you want to check the XSS vulnerability.
+This first version focuses only on XSS, **there's no need to manually send xss payload either for reflected or stored payload**; you just need to browse to the pages where you want to check the XSS vulnerability.
 
 # How to install
 1. Install jython and include it in the extender tab. 
