@@ -18,6 +18,8 @@ from javax.swing.table import AbstractTableModel;
 from threading import Lock
 
 XSS_payload = '1"onmouseover=hihey(97912)"'
+SQLi_payload = "'"
+SQLi_message_trigger='You have an error in your SQL syntax'
 
 
 class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageEditorController, AbstractTableModel):
@@ -28,6 +30,8 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
         
         modified_request=[]
         global XSS_payload
+        global SQLi_payload
+        global SQLi_message_trigger
         count_url_param = 0
         
         first_req = []
@@ -42,6 +46,11 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
                 
 
             modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+XSS_payload, parameters[i].getType())            
+            new_req=messageInfo.getRequest()
+            new_req = self._helpers.updateParameter(new_req, modified_parameter)
+            modified_request.append(new_req)
+
+            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+SQLi_payload, parameters[i].getType())            
             new_req=messageInfo.getRequest()
             new_req = self._helpers.updateParameter(new_req, modified_parameter)
             modified_request.append(new_req)
@@ -160,6 +169,15 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
             row = self._log.size()
             #self._log.add(LogEntry(toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
             self._log.add(LogEntry("XSS "+XSS_payload, self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
+            self.fireTableRowsInserted(row, row)
+            self._lock.release()
+
+        if(SQLi_message_trigger.lower() in msgResponse.lower()):
+            #print(messageInfo.getResponse()[responseInfo.getBodyOffset():])
+            self._lock.acquire()
+            row = self._log.size()
+            #self._log.add(LogEntry(toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
+            self._log.add(LogEntry("Error based SQLi", self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
             self.fireTableRowsInserted(row, row)
             self._lock.release()
 
