@@ -17,6 +17,8 @@ from javax.swing import SwingUtilities;
 from javax.swing.table import AbstractTableModel;
 from threading import Lock
 
+import urllib
+
 XSS_payload = '1"onmouseover=hihey(97912)"'
 SQLi_payload = "'"
 SQLi_message_trigger='You have an error in your SQL syntax'
@@ -45,18 +47,18 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
                 first_req = self._helpers.updateParameter(new_req, modified_parameter)
                 
 
-            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+XSS_payload, parameters[i].getType())            
+            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+urllib.quote(XSS_payload), parameters[i].getType())            
             new_req=messageInfo.getRequest()
             new_req = self._helpers.updateParameter(new_req, modified_parameter)
             modified_request.append(new_req)
 
-            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+SQLi_payload, parameters[i].getType())            
+            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+urllib.quote(SQLi_payload), parameters[i].getType())            
             new_req=messageInfo.getRequest()
             new_req = self._helpers.updateParameter(new_req, modified_parameter)
             modified_request.append(new_req)
 
         if (count_url_param == 0):
-            new_parameter = self._helpers.buildParameter("added", XSS_payload, 0)  
+            new_parameter = self._helpers.buildParameter("added", urllib.quote(XSS_payload), 0)  
             new_req=messageInfo.getRequest()
             new_req = self._helpers.addParameter(new_req, new_parameter)
             modified_request.append(new_req)
