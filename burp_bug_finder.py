@@ -36,37 +36,39 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
         global SQLi_message_trigger
         count_url_param = 0
         
-        first_req = []
-        for i in range (0, len(parameters)) :
-            if(parameters[i].getType()==parameters[i].PARAM_URL):
-                count_url_param = count_url_param + 1
+        if (self._callbacks.isInScope(analyzed.getUrl())):
 
-            if(i==0):
-                modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue(), parameters[i].getType())            
+            first_req = []
+            for i in range (0, len(parameters)) :
+                if(parameters[i].getType()==parameters[i].PARAM_URL):
+                    count_url_param = count_url_param + 1
+
+                if(i==0):
+                    modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue(), parameters[i].getType())            
+                    new_req=messageInfo.getRequest()
+                    first_req = self._helpers.updateParameter(new_req, modified_parameter)
+                    
+
+                modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+urllib.quote(XSS_payload), parameters[i].getType())            
                 new_req=messageInfo.getRequest()
-                first_req = self._helpers.updateParameter(new_req, modified_parameter)
-                
+                new_req = self._helpers.updateParameter(new_req, modified_parameter)
+                modified_request.append(new_req)
 
-            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+urllib.quote(XSS_payload), parameters[i].getType())            
-            new_req=messageInfo.getRequest()
-            new_req = self._helpers.updateParameter(new_req, modified_parameter)
-            modified_request.append(new_req)
+                modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+urllib.quote(SQLi_payload), parameters[i].getType())            
+                new_req=messageInfo.getRequest()
+                new_req = self._helpers.updateParameter(new_req, modified_parameter)
+                modified_request.append(new_req)
 
-            modified_parameter = self._helpers.buildParameter(parameters[i].getName(), parameters[i].getValue()+urllib.quote(SQLi_payload), parameters[i].getType())            
-            new_req=messageInfo.getRequest()
-            new_req = self._helpers.updateParameter(new_req, modified_parameter)
-            modified_request.append(new_req)
+            if (count_url_param == 0):
+                new_parameter = self._helpers.buildParameter("added", urllib.quote(XSS_payload), 0)  
+                new_req=messageInfo.getRequest()
+                new_req = self._helpers.addParameter(new_req, new_parameter)
+                modified_request.append(new_req)
+                #print(new_parameter.getName(),new_parameter.getValue(),new_parameter.getType())
 
-        if (count_url_param == 0):
-            new_parameter = self._helpers.buildParameter("added", urllib.quote(XSS_payload), 0)  
-            new_req=messageInfo.getRequest()
-            new_req = self._helpers.addParameter(new_req, new_parameter)
-            modified_request.append(new_req)
-            #print(new_parameter.getName(),new_parameter.getValue(),new_parameter.getType())
+            modified_request.append(first_req)
 
-        modified_request.append(first_req)
-
-        #self._stdout.println(requestString)
+            #self._stdout.println(requestString)
         return modified_request
 
 
@@ -173,6 +175,13 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
             self._log.add(LogEntry("XSS "+XSS_payload, self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
             self.fireTableRowsInserted(row, row)
             self._lock.release()
+            issue = CustomIssue(
+                        BasePair=messageInfo,
+                        IssueName='XSS [BurpBugFinder]',
+                        IssueDetail="Payload sent : "+XSS_payload,
+                        Severity='High',
+                    )
+            self._callbacks.addScanIssue(issue)
 
         if(SQLi_message_trigger.lower() in msgResponse.lower()):
             #print(messageInfo.getResponse()[responseInfo.getBodyOffset():])
@@ -182,6 +191,13 @@ class BurpExtender(IBurpExtender, IProxyListener, IHttpListener, ITab, IMessageE
             self._log.add(LogEntry("Error based SQLi", self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
             self.fireTableRowsInserted(row, row)
             self._lock.release()
+            issue = CustomIssue(
+                        BasePair=messageInfo,
+                        IssueName='Possible SQLi [BurpBugFinder]',
+                        IssueDetail="An error based SQLi has been found in this request",
+                        Severity='High',
+                    )
+            self._callbacks.addScanIssue(issue)
 
     #
     # extend AbstractTableModel
@@ -257,3 +273,65 @@ class LogEntry:
  
 
    
+from burp import IScanIssue
+
+
+class CustomIssue(IScanIssue):
+
+    def __init__(self, BasePair, Confidence='Certain', IssueBackground=None, IssueDetail=None, IssueName='BurpBugFinder generated issue', RemediationBackground=None, RemediationDetail=None, Severity='High'):
+
+        self.HttpMessages=[BasePair] # list of HTTP Messages
+        self.HttpService=BasePair.getHttpService() # HTTP Service
+        self.Url=BasePair.getUrl() # Java URL
+        self.Confidence = Confidence # "Certain", "Firm" or "Tentative"
+        self.IssueBackground = IssueBackground # String or None
+        self.IssueDetail = IssueDetail # String or None
+        self.IssueName = IssueName # String
+        self.IssueType = 134217728 # always "extension generated"
+        self.RemediationBackground = RemediationBackground # String or None
+        self.RemediationDetail = RemediationDetail # String or None
+        self.Severity = Severity # "High", "Medium", "Low", "Information" or "False positive"
+
+    def getHttpMessages(self):
+
+        return self.HttpMessages
+
+    def getHttpService(self):
+
+        return self.HttpService
+
+    def getUrl(self):
+
+        return self.Url
+
+    def getConfidence(self):
+
+        return self.Confidence
+
+    def getIssueBackground(self):
+
+        return self.IssueBackground
+
+    def getIssueDetail(self):
+
+        return self.IssueDetail
+
+    def getIssueName(self):
+
+        return self.IssueName
+
+    def getIssueType(self):
+
+        return self.IssueType
+
+    def getRemediationBackground(self):
+
+        return self.RemediationBackground
+
+    def getRemediationDetail(self):
+
+        return self.RemediationDetail
+
+    def getSeverity(self):
+
+        return self.Severity
