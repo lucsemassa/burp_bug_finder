@@ -18,9 +18,15 @@ The lastest version (2.7.3) at today date can be downloaded here https://repo1.m
 burp_bug_finder captures all requests sent through the proxy and resend them by modifiying every parameter (including cookie) with XSS and SQLi payloads.
 The XSS payload and SQL error message are then checked in the response of the request.
 
-If the payload pattern is found in the response, a log is added in the tab named BurpBugFinder.
+**You have to add the website to be processed in the target scope**
+![Target added to scope](images/target_added_to_scope.png)
+
+If the payload pattern is found in the response, a log is added in the tab named BurpBugFinder and .
 ![Payload sent](images/payload_sent.png)
 ![SQLi detection](images/sqli.png)
+
+If you're using burpsuite pro, you will get issue alert in the dashboard tab. 
+![Issues summary from burp pro](images/burp_pro_issue_from_burpbugfinder.png)
 
 **NB:** Since every request sent is tweaked, kindly enable the extension only when you want to check for bug.
 
