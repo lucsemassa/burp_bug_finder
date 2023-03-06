@@ -34,3 +34,4 @@ If you're using burpsuite pro, you will get issue alert in the dashboard tab.
 - https://portswigger.net/burp/extender#SampleExtensions
 - https://gist.github.com/irsdl/0ab8fce5368e449df64ed89c1b7323a6
 - https://cirius.medium.com/writing-your-own-burpsuite-extensions-complete-guide-cb7aba4dbceb
+- https://portswigger.net/burp/extender/api/
